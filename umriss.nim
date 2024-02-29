@@ -1,4 +1,4 @@
-import std / [strformat, tables]
+import std / [os, strformat, tables]
 
 type
   Syscalls = OrderedTable[string, int]
@@ -15,11 +15,13 @@ proc count(res: var Stats, pid, sc: string, squash: bool) =
   else:
     inc res[pid][sc]
 
-proc parseLine(stats: var Stats, line: string, squash: bool) =
+proc parseLine(stats: var Stats, line: string, squash: bool, fname: string) =
   var
     i: int
     c: char
     pid, sc: string
+  if not squash:
+    pid = fname & ':'
   assert line[i] in num
   while i <= line.high:
     c = line[i]
@@ -49,16 +51,17 @@ proc printSeccomp(stats: Stats, ctx: string) =
     for sc in tbl.keys:
       echo ctx & ".addRule(Allow, \"" & sc & "\")"
 
-proc run(action = "stats"; squash = false; seccomp_ctx = "ctx"; file: seq[string]): int =
-  if file.len != 1:
-    echo "expects exactly one argument"
+proc run(action = "stats"; squash = false; seccomp_ctx = "ctx"; files: seq[string]): int =
+  if files.len == 0:
+    echo "expects one or more arguments"
     return 1
   var
     stats: Stats
-    f = open(file[0], fmRead)
     line: string
-  while f.readLine(line):
-    stats.parseLine(line, squash)
+  for fp in files:
+    var f = open(fp, fmRead)
+    while f.readLine(line):
+      stats.parseLine(line, squash, extractFilename(fp))
   case action:
   of "stats":
     stats.printStats()
@@ -73,7 +76,7 @@ when isMainModule:
 
   const
     progName = "umriss"
-    progUse = "Usage:\n  " & progName & " [optional-params] file"
+    progUse = "Usage:\n  " & progName & " [optional-params] files..."
     progVer {.strdefine.} = strip(gorge("git tag -l --sort=version:refname '*.*.*' | tail -n1"))
 
   clCfg.version = progVer
