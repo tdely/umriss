@@ -49,7 +49,7 @@ proc printSeccomp(stats: Stats, ctx: string) =
     if pid != "":
       echo fmt"[pid {pid:>6}]"
     for sc in tbl.keys:
-      echo ctx & ".addRule(Allow, \"" & sc & "\")"
+      echo ctx & ".add_rule(Allow, \"" & sc & "\")"
 
 proc run(action = "stats"; squash = false; seccomp_ctx = "ctx"; files: seq[string]): int =
   if files.len == 0:
