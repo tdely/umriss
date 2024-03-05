@@ -57,7 +57,7 @@ proc printSeccomp(stats: Stats, ctx: string) =
     for sc in tbl.keys:
       echo ctx & ".add_rule(Allow, \"" & sc & "\")"
 
-proc run(action = "stats"; squash = false; seccomp_ctx = "ctx"; files: seq[string]): int =
+proc run(action = "stats"; squash = false; `from` = ""; seccomp_ctx = "ctx"; files: seq[string]): int =
   if files.len == 0:
     echo "expects one or more arguments"
     return 1
@@ -68,7 +68,9 @@ proc run(action = "stats"; squash = false; seccomp_ctx = "ctx"; files: seq[strin
     var f = open(fp, fmRead)
     while f.readLine(line):
       if (let p = parseLine(line); p.syscall != ""):
-        stats.count(extractFilename(fp) & ':' & p.pid, p.syscall)
+        let k = extractFilename(fp) & ':' & p.pid
+        if `from` == "" or (stats.hasKey(k) or p.syscall == `from`):
+          stats.count(k, p.syscall)
   if squash:
     stats = squash(stats)
   case action:
@@ -96,6 +98,7 @@ when isMainModule:
       "action": """the action to perform:
   stats: print syscall statistics (default)
   seccomp: create and print a list of seccomp add_rule commands""",
+      "from": "only record syscalls after observing given syscall",
       "squash": "do not separate syscalls by thread",
       "seccomp-ctx": "specify context var name for seccomp action",
     }
