@@ -6,14 +6,22 @@ type
 
 const num = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 
-proc count(res: var Stats, pid, sc: string, squash: bool) =
-  let pid = if squash: "" else: pid
-  if not res.hasKey(pid):
-    res[pid] = Syscalls()
-  if not res[pid].hasKey(sc):
-    res[pid][sc] = 1
+proc count(stats: var Stats, pid, sc: string) =
+  if not stats.hasKey(pid):
+    stats[pid] = Syscalls()
+  if not stats[pid].hasKey(sc):
+    stats[pid][sc] = 1
   else:
-    inc res[pid][sc]
+    inc stats[pid][sc]
+
+proc squash(stats: sink Stats): Stats =
+  result[""] = Syscalls()
+  for syscalls in stats.values:
+    for sc, count in syscalls.pairs:
+      if not result[""].hasKey(sc):
+        result[""][sc] = count
+      else:
+        inc(result[""][sc], count)
 
 proc parseLine(line: string): tuple[pid, syscall: string] =
   var
@@ -60,8 +68,9 @@ proc run(action = "stats"; squash = false; seccomp_ctx = "ctx"; files: seq[strin
     var f = open(fp, fmRead)
     while f.readLine(line):
       if (let p = parseLine(line); p.syscall != ""):
-        let k = if squash: p.pid else: extractFilename(fp) & ':' & p.pid
-        stats.count(k, p.syscall, squash)
+        stats.count(extractFilename(fp) & ':' & p.pid, p.syscall)
+  if squash:
+    stats = squash(stats)
   case action:
   of "stats":
     stats.printStats()
