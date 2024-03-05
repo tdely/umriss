@@ -15,13 +15,11 @@ proc count(res: var Stats, pid, sc: string, squash: bool) =
   else:
     inc res[pid][sc]
 
-proc parseLine(stats: var Stats, line: string, squash: bool, fname: string) =
+proc parseLine(line: string): tuple[pid, syscall: string] =
   var
     i: int
     c: char
     pid, sc: string
-  if not squash:
-    pid = fname & ':'
   assert line[i] in num
   while i <= line.high:
     c = line[i]
@@ -29,8 +27,8 @@ proc parseLine(stats: var Stats, line: string, squash: bool, fname: string) =
     if c == '<':
       break
     elif c == '(':
-      if pid.len > 0 and sc.len > 0:
-        stats.count(pid, sc, squash)
+      if sc.len > 0:
+        result = (pid: pid, syscall: sc)
       break
     elif c in num and sc.len == 0:
       pid.add c
@@ -61,7 +59,9 @@ proc run(action = "stats"; squash = false; seccomp_ctx = "ctx"; files: seq[strin
   for fp in files:
     var f = open(fp, fmRead)
     while f.readLine(line):
-      stats.parseLine(line, squash, extractFilename(fp))
+      if (let p = parseLine(line); p.syscall != ""):
+        let k = if squash: p.pid else: extractFilename(fp) & ':' & p.pid
+        stats.count(k, p.syscall, squash)
   case action:
   of "stats":
     stats.printStats()
