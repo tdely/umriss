@@ -91,14 +91,14 @@ proc parseLine(line: sink string): tuple[pid, syscall: string, nargs: int] =
 proc printStats(stats: Stats) =
   for pid, tbl in stats.pairs:
     if pid != "":
-      echo fmt"[pid {pid:>6}]"
+      echo fmt"[pid {pid}]"
     for sc, count in tbl.pairs:
       echo fmt"{count:>4}  {sc}"
 
 proc printSeccomp(stats: Stats, ctx: string) =
   for pid, tbl in stats.pairs:
     if pid != "":
-      echo fmt"[pid {pid:>6}]"
+      echo fmt"[pid {pid}]"
     for sc in tbl.keys:
       if sc[^1] == ')':
         let
