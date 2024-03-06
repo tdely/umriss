@@ -93,7 +93,7 @@ proc printStats(stats: Stats) =
     if pid != "":
       echo fmt"[pid {pid}]"
     for sc, count in tbl.pairs:
-      echo fmt"{count:>4}  {sc}"
+      echo fmt"{count:>6}  {sc}"
 
 proc printSeccomp(stats: Stats, ctx: string) =
   for pid, tbl in stats.pairs:
