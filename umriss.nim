@@ -116,13 +116,20 @@ proc run(action = "stats"; squash = false; nargs = false; `from` = ""; seccomp_c
     stats: Stats
     line: string
   for fp in files:
-    var f = open(fp, fmRead)
+    var
+      f = open(fp, fmRead)
+      hits: int
+    let fname = extractFilename(fp)
     while f.readLine(line):
       if (let p = parseLine(line); p.syscall != ""):
-        let k = extractFilename(fp) & ':' & p.pid
+        let k = fname & ':' & p.pid
         if `from` == "" or (stats.hasKey(k) or p.syscall == `from`):
           let nargs = if nargs: p.nargs else: -1
           stats.count(k, p.syscall, nargs)
+          inc hits
+    close f
+    if hits == 0:
+      stderr.writeLine "warning: no syscalls recorded for file " & fname
   if stats.len == 0:
     return 0
   if squash:
