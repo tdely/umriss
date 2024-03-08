@@ -141,13 +141,18 @@ when isMainModule:
 
   const
     progName = "umriss"
-    progUse = "Usage:\n  " & progName & " [optional-params] files..."
     progVer {.strdefine.} = strip(gorge("git tag -l --sort=version:refname '*.*.*' | tail -n1"))
+    progUse = fmt"""
+Usage:
+  {progName} [optional-params] files...
+Extract per thread or aggregated syscall information from strace output files
+Options(opt-arg sep :|=|spc):
+$options"""
 
   clCfg.version = progVer
 
   dispatchCf run, cmdName = progName, cf = clCfg, noHdr = true,
-    usage = progUse & "\n\nOptions(opt-arg sep :|=|spc):\n$options",
+    usage = progUse,
     help = {
       "action": """the action to perform:
   stats: print syscall statistics (default)
