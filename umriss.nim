@@ -6,8 +6,7 @@ type
 
 const num = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 
-proc count(stats: var Stats, pid, sc: string, nargs: int) =
-  let sc = if nargs != -1: fmt"{sc}({nargs})" else: sc
+proc count(stats: var Stats, pid, sc: string) =
   if not stats.hasKey(pid):
     stats[pid] = Syscalls()
   if not stats[pid].hasKey(sc):
@@ -124,8 +123,10 @@ proc run(action = "stats"; squash = false; nargs = false; `from` = ""; seccomp_c
       if (let p = parseLine(line); p.syscall != ""):
         let k = fname & ':' & p.pid
         if `from` == "" or (stats.hasKey(k) or p.syscall == `from`):
-          let nargs = if nargs: p.nargs else: -1
-          stats.count(k, p.syscall, nargs)
+          if nargs:
+            stats.count(k, fmt"{p.syscall}({p.nargs})")
+          else:
+            stats.count(k, p.syscall)
           inc hits
     close f
     if hits == 0:
