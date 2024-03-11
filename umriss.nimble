@@ -1,4 +1,4 @@
-version       = "0.5.0"
+version       = "1.0.0"
 author        = "Tobias Dély"
 description   = "Extract syscall stats from strace output files"
 license       = "MIT"
