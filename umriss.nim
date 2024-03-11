@@ -1,4 +1,5 @@
 import std / [os, strformat, strutils, tables]
+import umriss/syscalls
 
 type
   Syscalls = OrderedTable[string, int]
@@ -87,27 +88,38 @@ proc parseLine(line: sink string): tuple[pid, syscall: string, nargs: int] =
       sc.add c
     i.inc
 
-proc printStats(stats: Stats) =
+proc printStats(stats: Stats, annotate: bool) =
   for pid, tbl in stats.pairs:
     if pid != "":
       echo fmt"[pid {pid}]"
     for sc, count in tbl.pairs:
-      echo fmt"{count:>6}  {sc}"
+      var output = fmt"{count:>6}  {sc}"
+      if annotate:
+        let
+          i = sc.find('(')
+          desc = getSyscallDesc(if i != -1: sc[0..i-1] else: sc)
+        output = fmt"{output:<30} " & desc
+      echo output
 
-proc printSeccomp(stats: Stats, ctx: string) =
+proc printSeccomp(stats: Stats, ctx: string, annotate: bool) =
   for pid, tbl in stats.pairs:
     if pid != "":
       echo fmt"[pid {pid}]"
     for sc in tbl.keys:
-      if sc[^1] == ')':
-        let
-          i = sc.find('(')
-          nargs = sc[i+1..^2]
-        echo ctx & ".add_rule(Allow, \"" & sc[0..i-1] & "\", " & nargs & ")"
-      else:
-        echo ctx & ".add_rule(Allow, \"" & sc & "\")"
+      var
+        nargs: string
+        name = sc
+      if (let i = sc.find('('); i) != -1:
+        nargs = sc[i+1..^2]
+        name = sc[0..i-1]
+      var output = ctx & ".add_rule(Allow, \"" & name & "\""
+      output.add if nargs.len > 0: fmt", {nargs})" else: ")"
+      if annotate:
+        if (let desc = getSyscallDesc(name); desc.len) > 0:
+          output = fmt"{output:<45}" & "# " & desc
+      echo output
 
-proc run(action = "stats"; squash = false; nargs = false; `from` = ""; seccomp_ctx = "ctx"; files: seq[string]): int =
+proc run(action = "stats"; squash = false; nargs = false; annotate = false; `from` = ""; seccomp_ctx = "ctx"; files: seq[string]): int =
   if files.len == 0:
     echo "expects one or more arguments"
     return 1
@@ -137,9 +149,9 @@ proc run(action = "stats"; squash = false; nargs = false; `from` = ""; seccomp_c
     stats = squash(stats)
   case action:
   of "stats":
-    stats.printStats()
+    stats.printStats(annotate)
   of "seccomp":
-    stats.printSeccomp(seccomp_ctx)
+    stats.printSeccomp(seccomp_ctx, annotate)
   else:
     echo "unknown --action: " & action
     return 1
@@ -165,6 +177,7 @@ $options"""
       "action": """the action to perform:
   stats: print syscall statistics (default)
   seccomp: create and print a list of seccomp add_rule commands""",
+      "annotate": "show short description of each syscall",
       "from": "only record syscalls after observing given syscall",
       "nargs": "make number of syscall arguments significant",
       "squash": "do not separate syscalls by thread",

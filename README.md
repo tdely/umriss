@@ -106,12 +106,47 @@ $ umriss --from mmap example1.log
      1  exit_group
 ```
 
+More informative output can be created by using `--annotate`, showing a brief description of each syscall.
+
+```
+$ umriss --annotate example1.log
+[pid example1.log:17095]
+     1  execve                 execute program
+     3  brk                    change data segment size
+     1  access                 check real user's permissions for file
+     2  openat                 open file relative to directory file descriptor
+     3  fstat                  file status
+     8  mmap                   map/unmap files/devices into memory
+     2  close                  close file descriptor
+     1  read                   read from file descriptor
+     2  pread64                read from/write to file descriptor at given offset
+     1  arch_prctl             set architecture-specific thread state
+     1  set_tid_address        set pointer to thread ID
+     1  set_robust_list        get/set list of robust futexes
+     1  rseq
+     3  mprotect               set protection on region of memory
+     1  prlimit64
+     1  munmap                 map/unmap files/devices into memory
+     1  getrandom
+     1  write                  to file descriptor
+     1  exit_group             exit all threads in process
+```
+
 The output can be changed into a list of `add_rule` operations for [the Nim seccomp package](https://github.com/FedericoCeratto/nim-seccomp).
 
 ```
 $ umriss --action seccomp example1.log
 [pid example1.log:17095]
 ctx.add_rule(Allow, "execve")
+<output omitted to save space>
+```
+
+Using `--annotate` with `--action seccomp` will manifest comments.
+
+```
+$ umriss --action seccomp --annotate example1.log
+[pid example1.log:17095]
+ctx.add_rule(Allow, "execve")                # execute program
 <output omitted to save space>
 ```
 
@@ -129,6 +164,7 @@ Options(opt-arg sep :|=|spc):
                                      seccomp: create and print a list of seccomp add_rule commands
   -s, --squash    bool    false    do not separate syscalls by thread
   -n, --nargs     bool    false    make number of syscall arguments significant
+  --annotate      bool    false    show short description of each syscall
   -f=, --from=    string  ""       only record syscalls after observing given syscall
   --seccomp-ctx=  string  "ctx"    specify context var name for seccomp action
 ```
