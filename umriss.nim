@@ -119,7 +119,7 @@ proc printSeccomp(stats: Stats, ctx: string, annotate: bool) =
           output = fmt"{output:<45}" & "# " & desc
       echo output
 
-proc run(action = "stats"; squash = false; nargs = false; annotate = false; `from` = ""; seccomp_ctx = "ctx"; files: seq[string]): int =
+proc run(output = "stats"; squash = false; nargs = false; annotate = false; `from` = ""; seccomp_ctx = "ctx"; files: seq[string]): int =
   if files.len == 0:
     echo "expects one or more arguments"
     return 1
@@ -147,13 +147,13 @@ proc run(action = "stats"; squash = false; nargs = false; annotate = false; `fro
     return 0
   if squash:
     stats = squash(stats)
-  case action:
+  case output:
   of "stats":
     stats.printStats(annotate)
   of "seccomp":
     stats.printSeccomp(seccomp_ctx, annotate)
   else:
-    echo "unknown --action: " & action
+    echo "unknown --output: " & output
     return 1
 
 when isMainModule:
@@ -174,12 +174,12 @@ $options"""
   dispatchCf run, cmdName = progName, cf = clCfg, noHdr = true,
     usage = progUse,
     help = {
-      "action": """the action to perform:
+      "output": """the type of output to generate:
   stats: print syscall statistics (default)
   seccomp: create and print a list of seccomp add_rule commands""",
       "annotate": "show short description of each syscall",
       "from": "only record syscalls after observing given syscall",
       "nargs": "make number of syscall arguments significant",
       "squash": "do not separate syscalls by thread",
-      "seccomp-ctx": "specify context var name for seccomp action",
+      "seccomp-ctx": "specify context var name for seccomp output",
     }

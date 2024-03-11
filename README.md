@@ -8,7 +8,7 @@ The intended use case is to simplify the process of creating seccomp rulesets.
 
 ## Usage
 
-The default action is to aggregate per thread, ignore number of arguments to the syscall, and list call count.
+The default is to aggregate per thread, ignore number of arguments to the syscall, and list call count.
 
 ```
 $ umriss example1.log example2.log
@@ -135,16 +135,16 @@ $ umriss --annotate example1.log
 The output can be changed into a list of `add_rule` operations for [the Nim seccomp package](https://github.com/FedericoCeratto/nim-seccomp).
 
 ```
-$ umriss --action seccomp example1.log
+$ umriss --output seccomp example1.log
 [pid example1.log:17095]
 ctx.add_rule(Allow, "execve")
 <output omitted to save space>
 ```
 
-Using `--annotate` with `--action seccomp` will manifest comments.
+Using `--annotate` with `--output seccomp` will manifest comments.
 
 ```
-$ umriss --action seccomp --annotate example1.log
+$ umriss --output seccomp --annotate example1.log
 [pid example1.log:17095]
 ctx.add_rule(Allow, "execve")                # execute program
 <output omitted to save space>
@@ -159,12 +159,12 @@ Options(opt-arg sep :|=|spc):
   -h, --help                       print this cligen-erated help
   --help-syntax                    advanced: prepend,plurals,..
   --version       bool    false    print version
-  -a=, --action=  string  "stats"  the action to perform:
+  -o=, --output=  string  "stats"  the type of output to generate:
                                      stats: print syscall statistics (default)
                                      seccomp: create and print a list of seccomp add_rule commands
   -s, --squash    bool    false    do not separate syscalls by thread
   -n, --nargs     bool    false    make number of syscall arguments significant
-  --annotate      bool    false    show short description of each syscall
+  -a, --annotate  bool    false    show short description of each syscall
   -f=, --from=    string  ""       only record syscalls after observing given syscall
-  --seccomp-ctx=  string  "ctx"    specify context var name for seccomp action
+  --seccomp-ctx=  string  "ctx"    specify context var name for seccomp output
 ```
